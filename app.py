@@ -1,92 +1,27 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
 import pickle
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
+import numpy as np
 import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the trained model
-model = pickle.load(open("logistic_model.pkl", "rb"))
-
-# Load label encoders if used (optional)
-with open("label_encoders.pkl", "rb") as f:
-    label_encoders = pickle.load(f)
-
+# Set Streamlit page config
 st.set_page_config(page_title="Churn Prediction App", layout="centered")
+
+# Load model and preprocessing tools
+model = pickle.load(open("logistic_model.pkl", "rb"))
+scaler = pickle.load(open("scaler.pkl", "rb"))
+features = pickle.load(open("features.pkl", "rb"))
+
+# Load model performance metrics
+with open("model_metrics.json", "r") as f:
+    metrics = json.load(f)
 
 st.title("📱 Customer Churn Prediction")
 
 st.markdown("Enter customer details below to predict if they are likely to churn.")
 
-# Collect user input
-gender = st.selectbox("Gender", ["Male", "Female"])
-senior_citizen = st.selectbox("Senior Citizen", ["No", "Yes"])
-partner = st.selectbox("Has Partner", ["Yes", "No"])
-dependents = st.selectbox("Has Dependents", ["Yes", "No"])
-tenure = st.slider("Tenure (in months)", 0, 72, 12)
-monthly_charges = st.slider("Monthly Charges", 0.0, 150.0, 70.0)
-total_charges = st.slider("Total Charges", 0.0, 10000.0, 2500.0)
-contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
-paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
-payment_method = st.selectbox("Payment Method", ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"])
-
-# Create a DataFrame from input
-input_dict = {
-    'gender': [gender],
-    'SeniorCitizen': [1 if senior_citizen == "Yes" else 0],
-    'Partner': [partner],
-    'Dependents': [dependents],
-    'tenure': [tenure],
-    'MonthlyCharges': [monthly_charges],
-    'TotalCharges': [total_charges],
-    'Contract': [contract],
-    'PaperlessBilling': [paperless_billing],
-    'PaymentMethod': [payment_method]
-}
-input_df = pd.DataFrame(input_dict)
-
-# Encode categorical features
-for col in input_df.select_dtypes(include='object').columns:
-    if col in label_encoders:
-        le = label_encoders[col]
-        input_df[col] = le.transform(input_df[col])
-    else:
-        st.warning(f"⚠️ No encoder found for column '{col}'. Please retrain or check.")
-
-# Predict
-if st.button("Predict Churn"):
-    prediction = model.predict(input_df)[0]
-    probability = model.predict_proba(input_df)[0][1]
-
-    if prediction == 1:
-        st.error(f"⚠️ Customer is likely to **churn**. (Probability: {probability:.2f})")
-    else:
-        st.success(f"✅ Customer is likely to **stay**. (Probability: {1 - probability:.2f})")
-
-# Optional: Model performance metrics
-with st.expander("📊 Show model performance (optional)"):
-    st.markdown("Model: Logistic Regression")
-    st.write("Accuracy: 85%")
-    st.write("Precision: 0.80")
-    st.write("Recall: 0.74")
-    st.write("F1 Score: 0.76")
-
-# Load metrics from JSON file
-with open("model_metrics.json", "r") as f:
-    metrics = json.load(f)
-
-# Load model and pre-processing tools
-model = pickle.load(open("logistic_model.pkl", "rb"))
-scaler = pickle.load(open("scaler.pkl", "rb"))
-features = pickle.load(open("features.pkl", "rb"))
-
-st.title("📊 Customer Churn Prediction App")
-st.write("Enter customer details to predict if they are likely to churn.")
-
-# UI inputs
+# Input form
 gender = st.selectbox("Gender", ["Female", "Male"])
 senior = st.selectbox("Senior Citizen", [0, 1])
 partner = st.selectbox("Has Partner", ["Yes", "No"])
@@ -109,7 +44,7 @@ payment = st.selectbox("Payment Method", [
 monthly_charges = st.number_input("Monthly Charges", min_value=0.0)
 total_charges = st.number_input("Total Charges", min_value=0.0)
 
-# Build input dict for prediction
+# Build input dictionary
 input_dict = {
     'SeniorCitizen': senior,
     'tenure': tenure,
@@ -143,21 +78,23 @@ input_dict = {
     'PaymentMethod_Mailed check': 1 if payment == "Mailed check" else 0,
 }
 
-# Fill missing feature values with 0
+# Fill in missing features with 0
 for f in features:
     if f not in input_dict:
         input_dict[f] = 0
 
-# Prepare input for prediction
-input_array = np.array([input_dict[feature] for feature in features]).reshape(1, -1)
-
 # Predict
-if st.button("Predict"):
+if st.button("🔮 Predict Churn"):
+    input_array = np.array([input_dict[feature] for feature in features]).reshape(1, -1)
     prediction = model.predict(input_array)[0]
+    probability = model.predict_proba(input_array)[0][1]
+
     if prediction == 1:
-        st.warning("⚠️ This customer is likely to churn.")
+        st.warning(f"⚠️ This customer is likely to **churn**. (Probability: {probability:.2f})")
     else:
-        st.success("✅ This customer is likely to stay.")
+        st.success(f"✅ This customer is likely to **stay**. (Probability: {1 - probability:.2f})")
+
+# Model metrics
 with st.expander("📊 Show Model Performance Metrics"):
     st.write("### 🧪 Classification Metrics")
     st.write(f"**Accuracy**: {metrics['Accuracy']:.2f}")
@@ -168,8 +105,8 @@ with st.expander("📊 Show Model Performance Metrics"):
     st.write("### 🌀 Confusion Matrix")
     cm = metrics["Confusion Matrix"]
     fig, ax = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["No Churn", "Churn"], yticklabels=["No Churn", "Churn"], ax=ax)
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                xticklabels=["No Churn", "Churn"], yticklabels=["No Churn", "Churn"], ax=ax)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
     st.pyplot(fig)
-
