@@ -15,8 +15,16 @@ Try the app live 👉 [Streamlit App](https://churnpredictionapp-yg8jdvnujxdidsr
 - **Model Type:** Logistic Regression
 - **Training Dataset:** Telecom customer churn data
 - **Preprocessing:** Label Encoding, Standard Scaling
-- **Accuracy:** 85%
+- **Accuracy:** 79%
 - **Libraries Used:** pandas, scikit-learn, Streamlit, matplotlib, seaborn
+
+---
+## 🧪 Model Performance
+
+- **Accuracy:** 0.79  
+- **Precision:** 0.62  
+- **Recall:** 0.52  
+- **F1 Score:** 0.56
 
 ---
 
