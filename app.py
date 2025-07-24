@@ -4,6 +4,9 @@ import pandas as pd
 import pickle
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
+import json
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Load the trained model
 model = pickle.load(open("logistic_model.pkl", "rb"))
@@ -70,14 +73,6 @@ with st.expander("📊 Show model performance (optional)"):
     st.write("Precision: 0.80")
     st.write("Recall: 0.74")
     st.write("F1 Score: 0.76")
-
-
-import streamlit as st
-import pickle
-import numpy as np
-import json
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 # Load metrics from JSON file
 with open("model_metrics.json", "r") as f:
